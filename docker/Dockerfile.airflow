@@ -1,0 +1,11 @@
+# Używamy oficjalnego obrazu Airflow 3.2.0 z Debianem Bookworm
+FROM apache/airflow:3.2.0
+
+USER root
+# Instalacja Javy 17 dla Sparka (wymagana w Bookworm)
+RUN apt-get update && apt-get install -y openjdk-17-jdk && apt-get clean
+
+USER airflow
+
+# Instalujemy jawnie biblioteki potrzebne do generowania i zapisu danych in-memory do warstwy Bronze
+RUN pip install --no-cache-dir pandas numpy pyarrow fastparquet

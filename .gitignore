@@ -1,0 +1,67 @@
+# ==========================================
+# ENTERPRISE BESS ANALYTICS REPO GITIGNORE
+# ==========================================
+
+# --- Python Core & Environments ---
+venv/
+.venv/
+ENV/
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# --- Python Bytecode & Cache ---
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.hypothesis/
+
+# --- Static Code Analysis & Linters ---
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+dmypy.json
+
+# --- Local Infrastructure Datastores (Airflow 3 / Spark) ---
+# Blocks generated telemetry files so they won't bloat Git storage
+data/
+dags/.airflow_db/
+logs/
+airflow.cfg
+airflow.db
+webserver_config.py
+.pwrite_lock
+
+# --- JetBrains & VS Code Configurations ---
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*~
+
+# --- Operating System & Temp Files ---
+.DS_Store
+Thumbs.db
+progress.marks
+*.tmp
+*.bak
+*.log
