@@ -96,11 +96,6 @@ make validate
 ```
 This invokes sequential checks utilizing Ruff (linting & formatting) and Mypy (strict type-checking).
 
-# Step 3: Run the Test Pyramid
-Execute the complete local test suite to verify internal analytical calculations and catch potential regressions:
-```bash
-make test
-```
 ## 🏃 Deployment & System Runtime Operations
 Launching Infrastructure and the Processing Pipeline
 The entire BESS ecosystem is self-contained. To spin up container assets, provision default variables, and force an initial pipeline synchronization, run:
@@ -116,6 +111,11 @@ Compiles local context Dockerfiles and boots up airflow-webserver, airflow-sched
 Blocks and polls the Airflow web endpoint (:8080) until full health check acceptance is received.
 
 Unpauses and dynamically triggers the primary raw ingestion DAG (bess_bronze_pure_triggers_dag).
+# Run the Test Pyramid
+Execute the complete local test suite to verify internal analytical calculations and catch potential regressions:
+```bash
+make test
+```
 
 # Accessing the Web Services:
 Once running, endpoints are reachable locally:
