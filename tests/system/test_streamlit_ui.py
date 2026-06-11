@@ -4,10 +4,10 @@ from streamlit.testing.v1 import AppTest
 
 
 def test_streamlit_dashboard_render_with_no_data(tmp_path):
-    empty_bronze = tmp_path / "empty_bronze"
-    empty_bronze.mkdir()
+    empty_ = tmp_path / "empty_"
+    empty_.mkdir()
 
-    os.environ["DATA_DIR"] = str(empty_bronze)
+    os.environ["DATA_DIR"] = str(empty_)
 
     at = AppTest.from_file("src/streamlit/app.py", default_timeout=30)
     at.run()

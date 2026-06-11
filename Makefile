@@ -33,8 +33,8 @@ containers: ## Spin up infrastructure and trigger pipeline
 	@echo "Waiting for Airflow Webserver to be ready..."
 	@until curl -s http://localhost:8080/ui/ > /dev/null; do sleep 5; done
 	@echo "Airflow is up. Triggering pipeline..."
-	@docker compose exec -T airflow-scheduler airflow dags unpause bess_bronze_pure_triggers_dag
-	@docker compose exec -T airflow-scheduler airflow dags trigger bess_bronze_pure_triggers_dag
+	@docker compose exec -T airflow-scheduler airflow dags unpause bess_pure_triggers_dag
+	@docker compose exec -T airflow-scheduler airflow dags trigger bess_pure_triggers_dag
 	@echo "Pipeline triggered. Dashboard available at http://localhost:8501"
 
 dag-update: ## Force Airflow 3 to re-serialize

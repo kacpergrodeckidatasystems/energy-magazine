@@ -7,5 +7,5 @@ RUN apt-get update && apt-get install -y openjdk-17-jdk && apt-get clean
 
 USER airflow
 
-# Instalujemy jawnie biblioteki potrzebne do generowania i zapisu danych in-memory do warstwy Bronze
+# Instalujemy jawnie biblioteki potrzebne do generowania i zapisu danych in-memory do warstwy 
 RUN pip install --no-cache-dir pandas numpy pyarrow fastparquet

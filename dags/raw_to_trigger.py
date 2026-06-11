@@ -3,7 +3,7 @@ from datetime import datetime
 from airflow.sdk import dag, task
 
 # Import the new Object-Oriented Task structures and Local Storage Driver
-from src.airflow.raw_to_bronze_etl import (
+from src.airflow.raw_to_etl import (
     BatteryIngestionTask,
     EnvironmentIngestionTask,
     InverterIngestionTask,
@@ -12,13 +12,13 @@ from src.airflow.raw_to_bronze_etl import (
 
 
 @dag(
-    dag_id="bess_bronze_pure_triggers_dag",
+    dag_id="bess_pure_triggers_dag",
     start_date=datetime(2026, 6, 1),
     catchup=False,
     schedule=None,
-    tags=["bess", "bronze", "aop"],
+    tags=["bess", "", "aop"],
 )
-def bess_bronze_pipeline():
+def bess__pipeline():
 
     # Initialize enterprise infrastructure components
     storage = LocalParquetStorage()
@@ -63,4 +63,4 @@ def bess_bronze_pipeline():
     env_data >> inv_data >> bat_data
 
 
-bess_bronze_pure_triggers_dag = bess_bronze_pipeline()
+bess__pure_triggers_dag = bess__pipeline()

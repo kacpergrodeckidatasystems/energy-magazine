@@ -6,9 +6,9 @@ import streamlit as st
 
 
 class BESSDataLoader:
-    """Handles I/O operations for reading structured battery and system telemetry from the Bronze layer"""
+    """Handles I/O operations for reading structured battery and system telemetry from the layer"""
 
-    def __init__(self, base_dir: str = "./data/bronze"):
+    def __init__(self, base_dir: str = "./data"):
         self.env_dir = os.path.join(base_dir, "environment")
         self.inv_dir = os.path.join(base_dir, "inverter")
         self.bat_dir = os.path.join(base_dir, "battery")
@@ -33,5 +33,5 @@ class BESSDataLoader:
 
             return df_env, df_inv, df_bat
         except Exception as e:
-            st.error(f"Critical error loading Bronze tier telemetry matrix: {str(e)}")
+            st.error(f"Critical error loading tier telemetry matrix: {str(e)}")
             return None, None, None

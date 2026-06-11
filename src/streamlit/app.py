@@ -19,7 +19,7 @@ from src.streamlit.physics_analytics import BESSPhysicsAnalytics
 st.set_page_config(page_title="BESS Telemetry Dashboard", page_icon="🔋", layout="wide")
 st.title("🔋 BESS Real-Time Diagnostic Dashboard")
 
-data_dir = os.getenv("DATA_DIR", "./data/bronze")
+data_dir = os.getenv("DATA_DIR", "./data")
 data_loader = BESSDataLoader(base_dir=data_dir)
 
 
@@ -52,7 +52,7 @@ if available_dates:
         format_func=lambda x: datetime.strptime(x, "%Y%m%d").strftime("%Y-%m-%d"),
     )
 else:
-    st.sidebar.warning("No data found in bronze directory! Please trigger the Airflow DAG first.")
+    st.sidebar.warning("No data found in directory! Please trigger the Airflow DAG first.")
     st.stop()
 
 
@@ -61,7 +61,7 @@ def cached_load(date_str: str):
     return data_loader.load_daily_data(date_str)
 
 
-# Load data from bronze tier
+# Load data from tier
 df_env, df_inv, df_bat = cached_load(selected_date_str)
 
 if df_env is not None and df_inv is not None and df_bat is not None:

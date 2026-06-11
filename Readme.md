@@ -26,7 +26,7 @@ physics/
 ├── config/                  # Application configuration assets (e.g., authentication)
 │   └── auth.json
 ├── dags/                    # Apache Airflow 3 DAG definitions
-│   └── raw_to_bronze_trigger.py
+│   └── raw_to_trigger.py
 ├── docker/                  # Dockerfiles isolated by infrastructure component
 │   ├── Dockerfile.airflow
 │   └── Dockerfile.streamlit
@@ -35,7 +35,7 @@ physics/
 │   ├── .airflowignore       # Directory exclusion rules for the Airflow DAG parser
 │   ├── airflow/             # ETL logic executed inside the compute containers
 │   │   ├── __init__.py
-│   │   └── raw_to_bronze_etl.py
+│   │   └── raw_to_etl.py
 │   ├── generators/          # High-fidelity synthetic BESS telemetry data generators
 │   │   ├── __init__.py
 │   │   └── raw_generators.py
@@ -110,7 +110,7 @@ Compiles local context Dockerfiles and boots up airflow-webserver, airflow-sched
 
 Blocks and polls the Airflow web endpoint (:8080) until full health check acceptance is received.
 
-Unpauses and dynamically triggers the primary raw ingestion DAG (bess_bronze_pure_triggers_dag).
+Unpauses and dynamically triggers the primary raw ingestion DAG (bess_pure_triggers_dag).
 # Run the Test Pyramid
 Execute the complete local test suite to verify internal analytical calculations and catch potential regressions:
 ```bash
