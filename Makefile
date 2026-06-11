@@ -14,9 +14,13 @@ setup: | $(VENV_NAME)
 	@$(PIP) install --upgrade pip
 	@$(PIP) install -e .[dev]
 	@touch $(VENV_NAME)/bin/activate
-	@mkdir -p data
-	@echo "Give programe permissions to create/manage files in 'data' folder..."
-	@$(MAKE) fix-permissions
+	@if [ ! -d "data" ]; then \
+		echo "Creating 'data' directory and fixing permissions..."; \
+		mkdir -p data; \
+		$(MAKE) fix-permissions; \
+	else \
+		echo "Directory 'data' already exists, skipping creation and permission fix."; \
+	fi
 
 $(VENV_NAME):
 	python3 -m venv $(VENV_NAME)
