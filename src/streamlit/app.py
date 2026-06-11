@@ -65,20 +65,45 @@ def cached_load(date_str: str):
 df_env, df_inv, df_bat = cached_load(selected_date_str)
 
 if df_env is not None and df_inv is not None and df_bat is not None:
-    # --- SIDEBAR: HARDWARE FILTERS ---
+    # ==========================================
+    # --- SIDEBAR: CASCADING HARDWARE FILTERS ---
+    # ==========================================
     st.sidebar.markdown("---")
-    st.sidebar.header("🔍 Hardware Filters")
+    st.sidebar.header("🎛️ Asset Filtering")
 
     all_racks = sorted(df_bat["rack_id"].unique())
-    selected_racks = st.sidebar.multiselect("Rack Unit:", all_racks, default=all_racks)
+    selected_racks = st.sidebar.multiselect(
+        "🗄️ Rack Unit:", 
+        options=all_racks, 
+        default=all_racks,
+        help="Odznaczenie jednostki rack automatycznie ukryje przypisane do niej moduły."
+    )
 
-    all_modules = sorted(df_bat["battery_module_id"].unique())
-    selected_modules = st.sidebar.multiselect("Battery Module:", all_modules, default=all_modules)
+    df_bat_rack_filtered = df_bat[df_bat["rack_id"].isin(selected_racks)].copy()
 
-    # Apply dynamic filtering
-    df_bat_filtered = df_bat[
-        (df_bat["rack_id"].isin(selected_racks)) & (df_bat["battery_module_id"].isin(selected_modules))
-    ]
+    if not df_bat_rack_filtered.empty:
+        df_bat_rack_filtered["global_module_id"] = (
+            df_bat_rack_filtered["rack_id"].str.replace("_", " ").str.title()
+            + " | "
+            + df_bat_rack_filtered["battery_module_id"].str.replace("battery_module_", "bat")
+        )
+        available_modules = sorted(df_bat_rack_filtered["global_module_id"].unique())
+    else:
+        df_bat_rack_filtered["global_module_id"] = []
+        available_modules = []
+
+    selected_modules = st.sidebar.multiselect(
+        "🔋 Battery Module:",
+        options=available_modules,
+        default=available_modules,
+        help="Wybierz unikalne moduły z listy od 0 do 10, aby izolować ich charakterystyki robocze."
+    )
+
+    df_bat_filtered = df_bat_rack_filtered[df_bat_rack_filtered["global_module_id"].isin(selected_modules)]
+
+    if df_bat_filtered.empty:
+        st.warning("⚠️ Odznaczono wszystkie zasoby sprzętowe. Wybierz przynajmniej jeden moduł bateryjny w panelu bocznym, aby wyświetlić telemetrię SCADA.")
+        st.stop()
 
     # Execute physical analytics calculations
     metrics = physics_engine.calculate_energy_and_rte(df_inv)

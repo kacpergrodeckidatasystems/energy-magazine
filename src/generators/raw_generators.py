@@ -128,53 +128,67 @@ class BatteryDayGenerator(DayGenerator):
     """Generates multi-rack Battery Management System (BMS) cell telemetry"""
 
     def generate(self, target_date: datetime) -> pd.DataFrame:
-        current_time = self._init_start_time(target_date)
-        start_day = current_time.day
-        racks = ["rack_01", "rack_02"]
+        """Generates dynamic multi-rack battery submodule physics time-series"""
         records = []
+        current_time = datetime(target_date.year, target_date.month, target_date.day, 0, 0, 0)
+        end_time = current_time + timedelta(days=1)
 
-        while current_time.day == start_day:
+        temp_states = {}
+
+        while current_time < end_time:
             profile = BESSPhysicsProfile(current_time)
+            
+            time_float = current_time.hour + current_time.minute / 60.0
+            calculated_ambient = 21.5 + 6.5 * math.sin((time_float - 8.0) / 24.0 * 2.0 * math.pi)
 
-            for rack_id in racks:
-                rack_current = float(profile.base_current + np.random.normal(0, 0.5))
-                rack_soc = float(profile.soc_trend + np.random.normal(0, 0.1))
+            for rack_idx in range(1, 3):
+                rack_id = f"rack_{str(rack_idx).zfill(2)}"
+                
+                rack_current = profile.base_current * (1.0 if rack_idx == 1 else 0.96)
 
                 for m_idx in range(1, 6):
-                    thermal_gradient = m_idx * 0.7
-                    joule_heating = (rack_current**2) * 0.00025
+                    state_key = (rack_id, m_idx)
+                    
+                    module_signature = (rack_idx * 3.14 + m_idx * 1.618) % 1.0
+                    
+                    if state_key not in temp_states:
+                        temp_states[state_key] = calculated_ambient + 1.0 + (module_signature * 1.5)
 
-                    # Thermal lag calculation based on I^2R
-                    module_temp = 23.5 + thermal_gradient + (joule_heating * 0.06) + np.random.normal(0, 0.05)
-                    # Open Circuit Voltage mapped linearly to cell chemistry state
-                    module_voltage = 158.0 + (rack_soc - 15.0) * 0.18 + np.random.normal(0, 0.03)
-                    module_soc = rack_soc + np.random.normal(0, 0.05)
+                    internal_resistance = 0.010 + (module_signature * 0.006) # od 0.010 do 0.016 Ohm
+                    thermal_loss_factor = 0.010 + (module_signature * 0.004) # delikatne różnice w cyrkulacji powietrza
 
-                    # --- ANOMALY INJECTION MATRIX ---
-                    # [Point 1] Voltage Sag / Overvoltage (High internal resistance)
-                    if rack_id == "rack_01" and m_idx == 2:
-                        module_voltage -= rack_current * 0.08
+                    module_soc = profile.soc_trend - (m_idx * 0.15) - (module_signature * 1.0)
+                    module_voltage = 3.2 + (module_soc / 100.0) * 0.8
+                    
+                    module_voltage -= rack_current * internal_resistance
 
-                    # [Point 2] Local HVAC Failure / Blocked thermal dissipation
-                    if rack_id == "rack_02" and m_idx == 4:
-                        anomaly_heating = (rack_current**2) * 0.0022
-                        module_temp += anomaly_heating + 5.0
+                    module_voltage = ValueUtils.clamp(module_voltage, 2.5, 4.2)
+
+                    module_temp = temp_states[state_key]
+                    thermal_loss = (module_temp - calculated_ambient) * thermal_loss_factor
+                    internal_heating = (rack_current ** 2) * internal_resistance * 0.05
+                    
+                    module_temp += internal_heating - thermal_loss
+                    temp_states[state_key] = module_temp
+
+                    jitter = timedelta(seconds=np.random.randint(-5, 6))
+                    actual_timestamp = current_time + jitter
 
                     records.append(
                         {
-                            "timestamp": current_time,
+                            "timestamp": actual_timestamp,
                             "rack_id": rack_id,
                             "battery_module_id": f"battery_module_{str(m_idx).zfill(2)}",
                             "module_voltage_V": float(module_voltage),
-                            "rack_total_current_A": rack_current,
+                            "rack_total_current_A": float(rack_current),
                             "module_temperature_C": float(module_temp),
                             "soc_percent": float(ValueUtils.clamp(module_soc, 0.0, 100.0)),
                         }
                     )
+
             current_time += self.interval
 
         return pd.DataFrame(records)
-
 
 # --- WRAPPER INTERFACES FOR BACKWARDS COMPATIBILITY WITH ETL PIPELINES ---
 def generate_environment_day(target_date: datetime) -> pd.DataFrame:

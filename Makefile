@@ -10,11 +10,16 @@ MYPY      := $(VENV_NAME)/bin/mypy
 help: ## Display this help screen
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
-setup: $(VENV_NAME)/bin/activate
-	@python3 -m venv $(VENV_NAME)
+setup: | $(VENV_NAME)
 	@$(PIP) install --upgrade pip
 	@$(PIP) install -e .[dev]
 	@touch $(VENV_NAME)/bin/activate
+	@mkdir -p data
+	@echo "Give programe permissions to create/manage files in 'data' folder..."
+	@$(MAKE) fix-permissions
+
+$(VENV_NAME):
+	python3 -m venv $(VENV_NAME)
 
 # --- INFRASTRUCTURE & AUTOMATION ---
 containers: ## Spin up infrastructure and trigger pipeline
@@ -54,3 +59,8 @@ stop: ## stop workspace
 test:
 	@echo "Running test suite..."
 	@bash -c "set -a; source .env; set +a; PYTHONPATH=$(shell pwd) $(VENV_NAME)/bin/pytest tests/ -v"
+
+fix-permissions:
+	@echo "Fixing permissions for folder 'data'..."
+	@sudo chown -R $(USER):$(USER) data
+	@chmod -R 775 data
