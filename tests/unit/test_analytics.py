@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.streamlit.physics_analytics import BESSPhysicsAnalytics
+from src.analytics.physics_analytics import BESSPhysicsAnalytics
 
 
 def test_calculate_energy_and_rte_normal_operation():

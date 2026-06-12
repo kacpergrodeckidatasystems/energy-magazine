@@ -1,14 +1,13 @@
+import logging
+logger = logging.getLogger(__name__)
 import os
-
 import pandas as pd
-
 import streamlit as st
-
-
 class BESSDataLoader:
     """Handles I/O operations for reading structured battery and system telemetry from the layer"""
 
     def __init__(self, base_dir: str = "./data"):
+        self.base_dir = base_dir
         self.env_dir = os.path.join(base_dir, "environment")
         self.inv_dir = os.path.join(base_dir, "inverter")
         self.bat_dir = os.path.join(base_dir, "battery")
@@ -35,3 +34,13 @@ class BESSDataLoader:
         except Exception as e:
             st.error(f"Critical error loading tier telemetry matrix: {str(e)}")
             return None, None, None
+    
+    def load_processed_file(self, file_type: str, date_str: str) -> pd.DataFrame:
+        """Loads processed analytic files from data/processed directory."""
+        
+        # Matches your existing directory structure
+        file_path = os.path.join(self.base_dir, "raw", f"{file_type}.parquet")
+        logger.info(f"Trying to load file from: {file_path}")
+        if os.path.exists(file_path):
+            return pd.read_parquet(file_path)
+        return pd.DataFrame()

@@ -2,10 +2,8 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Instalacja narzędzi wizualizacyjnych oraz pandas/numpy/pyarrow do czytania Parqueta
 RUN pip install --no-cache-dir streamlit plotly pandas numpy pyarrow
 
 EXPOSE 8501
 
-# Startujemy bezpośrednio Streamlita
-CMD ["streamlit", "run", "src/dashboard.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["streamlit", "run", "src/app.py", "--server.port=8501", "--server.address=0.0.0.0"]

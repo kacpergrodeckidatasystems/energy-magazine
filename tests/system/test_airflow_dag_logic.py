@@ -9,7 +9,7 @@ def dagbag():
 
 def test_dag_structure(dagbag):
     """Checks if the main pipeline has the correct task flow."""
-    dag = dagbag.get_dag("bess__pure_triggers_dag")
+    dag = dagbag.get_dag("bess_pure_triggers_dag")
     assert dag is not None
 
     tasks = dag.task_dict.keys()

@@ -26,16 +26,29 @@ $(VENV_NAME):
 	python3 -m venv $(VENV_NAME)
 
 # --- INFRASTRUCTURE & AUTOMATION ---
-containers: ## Spin up infrastructure and trigger pipeline
+.PHONY: containers
+containers: ## Spin up infrastructure and trigger pipeline safely
 	@if [ ! -f .env ]; then cp .env.example .env; fi
-	@echo "Launching infrastructure..."
+	@echo "🚀 Launching infrastructure..."
 	@docker compose up --build -d
-	@echo "Waiting for Airflow Webserver to be ready..."
+	
+	@echo "⏳ Waiting for Airflow Webserver to be ready..."
 	@until curl -s http://localhost:8080/ui/ > /dev/null; do sleep 5; done
-	@echo "Airflow is up. Triggering pipeline..."
-	@docker compose exec -T airflow-scheduler airflow dags unpause bess_pure_triggers_dag
-	@docker compose exec -T airflow-scheduler airflow dags trigger bess_pure_triggers_dag
-	@echo "Pipeline triggered. Dashboard available at http://localhost:8501"
+	
+	@echo "🔍 Checking for DAG registration..."
+	@# Czekaj maksymalnie 60 sekund, aż DAG-i pojawią się w bazie
+	@for dag in bess_pure_triggers_dag bess_market_weather_sync; do \
+		echo "Waiting for $$dag to be registered..."; \
+		until docker compose exec -T airflow-scheduler airflow dags list | grep -q "$$dag"; do \
+			sleep 5; \
+		done; \
+		echo "✅ $$dag found. Unpausing..."; \
+		docker compose exec -T airflow-scheduler airflow dags unpause $$dag; \
+		echo "🚀 Triggering $$dag..."; \
+		docker compose exec -T airflow-scheduler airflow dags trigger $$dag; \
+	done
+	
+	@echo "✨ Pipeline fully triggered. Dashboard available at http://localhost:8501"
 
 dag-update: ## Force Airflow 3 to re-serialize
 	docker compose exec -T airflow-scheduler airflow dags reserialize
@@ -68,3 +81,7 @@ fix-permissions:
 	@echo "Fixing permissions for folder 'data'..."
 	@sudo chown -R $(USER):$(USER) data
 	@chmod -R 775 data
+
+dev:
+	@echo "🔄 Restarting services without rebuilding..."
+	@docker compose restart bess-dashboard airflow-scheduler airflow-dag-processor

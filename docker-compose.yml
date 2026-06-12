@@ -4,6 +4,7 @@ x-airflow-common: &airflow-common
     dockerfile: docker/Dockerfile.airflow
   environment:
     &airflow-common-env
+    ENTSOE_API_KEY: ${ENTSOE_API_KEY}
     AIRFLOW__CORE__EXECUTOR: ${AIRFLOW__CORE__EXECUTOR}
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: ${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
     AIRFLOW__CORE__LOAD_EXAMPLES: ${AIRFLOW__CORE__LOAD_EXAMPLES}
