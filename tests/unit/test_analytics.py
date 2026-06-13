@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.streamlit.physics_analytics import BESSPhysicsAnalytics
+from src.analytics.physics_analytics import BESSPhysicsAnalytics
 
 
 def test_calculate_energy_and_rte_normal_operation():
@@ -42,30 +42,30 @@ def test_detect_thermal_anomalies_nominal_and_outlier():
     """Verifies that 3-Sigma rule correctly flags an explicit temperature hotspot outlier."""
     timestamps = pd.date_range(start="2026-06-10 00:00:00", periods=5, freq="MIN")
     data = []
-    
+
     # Generate balanced baseline data (~25 degC) for 21 stable batteries
     for t in timestamps:
         for i in range(1, 21):
             data.append({"timestamp": t, "battery_id": f"bat_{i}", "temperature": 25.0 + np.random.normal(0, 0.1)})
-            
+
     # Inject a severe thermal anomaly (hotspot) on battery 99
     for t in timestamps:
         data.append({"timestamp": t, "battery_id": "bat_99", "temperature": 42.0}) # Extreme deviation
-        
+
     df = pd.DataFrame(data)
     analytics_engine = BESSPhysicsAnalytics()
-    
+
     # Execute statistical detection
     result_df = analytics_engine.detect_thermal_anomalies(df, threshold_sigma=3.0)
-    
+
     # Assertions
     assert "is_thermal_anomaly" in result_df.columns
     assert "temperature_z_score" in result_df.columns
-    
+
     # Filter anomalies
     anomalies = result_df[result_df["is_thermal_anomaly"] == True]
     normal_cells = result_df[result_df["is_thermal_anomaly"] == False]
-    
+
     # Verify bat_5 was isolated as the anomaly across all timesteps
     assert not anomalies.empty
     assert (anomalies["battery_id"] == "bat_99").all()

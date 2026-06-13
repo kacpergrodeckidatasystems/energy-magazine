@@ -1,5 +1,6 @@
 import os
 import tempfile
+
 import pytest
 
 if "AIRFLOW__DATABASE__SQL_ALCHEMY_CONN" in os.environ:
@@ -13,6 +14,7 @@ os.environ["AIRFLOW__CORE__LOAD_EXAMPLES"] = "False"
 os.environ["AIRFLOW__CORE__UNIT_TEST_MODE"] = "True"
 
 from airflow.utils import db
+
 
 @pytest.fixture(scope="session", autouse=True)
 def init_airflow_db():

@@ -27,7 +27,7 @@ class TestAirflowSystem:
 
     def test_main_pipeline_is_registered(self):
         """Sprawdza, czy główny potok analityczny jest poprawnie załadowany w bazie Airflow."""
-        target_dag_id = "bess__pure_triggers_dag"
+        target_dag_id = "bess_pure_triggers_dag"
 
         output = self.run_docker_exec(["airflow", "dags", "list"])
         assert target_dag_id in output, (
