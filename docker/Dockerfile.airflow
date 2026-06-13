@@ -1,25 +1,39 @@
+# Apache Airflow Docker Image
+# This Dockerfile builds a custom Airflow image with Java support and project dependencies
+
+# Base image: Apache Airflow 3.2.0
 FROM apache/airflow:3.2.0
 
+# Switch to root user to install system packages
 USER root
 
+# Install system dependencies:
+# - openjdk-17-jdk: Required for PySpark operations
+# - build-essential: Compilation tools for Python packages with native extensions
 RUN apt-get update && apt-get install -y \
     openjdk-17-jdk \
     build-essential \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Configure Java environment variables for PySpark
 ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 ENV PATH=$JAVA_HOME/bin:$PATH
 
+# Switch back to airflow user for security best practices
 USER airflow
 
-# 1. Kopiujemy konfigurację zależności
+# Copy project configuration file containing dependencies
 COPY pyproject.toml .
 
-# 2. POPRAWKA: Kopiujemy również folder src/, aby setuptools miało co zbudować!
+# Copy source code directory required by setuptools for package installation
 COPY src/ ./src/
 
-# 3. Instalujemy projekt
+# Install the project in editable mode with development dependencies
+# --no-cache-dir: Reduces image size by not caching pip packages
+# --user: Installs packages in user's home directory
+# .[dev]: Installs project with dev extras defined in pyproject.toml
 RUN pip install --no-cache-dir --user .[dev]
 
+# Set Python path to include Airflow workspace directory
 ENV PYTHONPATH=/opt/airflow

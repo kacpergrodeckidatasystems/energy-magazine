@@ -1,13 +1,11 @@
-import pytest
+from unittest.mock import MagicMock
+
 import pandas as pd
-import numpy as np
-from unittest.mock import patch, MagicMock
+import pytest
+
+from src.streamlit.tabs.tab_business import _get_top_recommendations
 
 # Importy Twoich funkcji z zakładek
-from src.streamlit.tabs.tab_monitoring import render_monitoring_tab
-from src.streamlit.tabs.tab_physics import render_physics_tab
-from src.streamlit.tabs.tab_weather import render_weather_tab
-from src.streamlit.tabs.tab_business import render_business_tab, _get_top_recommendations
 
 # ==========================================
 # FIXTURES (Przygotowanie danych testowych)
@@ -57,7 +55,7 @@ def mock_st_columns(spec, *args, **kwargs):
 def test_get_top_recommendations_logic(mock_market_df, mock_weather_df):
     """Testuje, czy logika rekomendacji biznesowych poprawnie interpretuje skrajne wartości."""
     recs = _get_top_recommendations(mock_market_df, mock_weather_df)
-    
+
     assert len(recs) <= 2, "Funkcja powinna zwracać maksymalnie 2 rekomendacje"
     assert any("GRID CHARGE OPPORTUNITY" in r for r in recs), "Nie wykryto ujemnych cen (REC_01)"
     assert any("PEAK DISCHARGE" in r for r in recs), "Nie wykryto ekstremalnych szczytów cenowych (REC_02)"

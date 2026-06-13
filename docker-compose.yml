@@ -1,98 +1,175 @@
+# ============================================================================
+# Docker Compose Configuration for BESS Analytics Platform
+# ============================================================================
+# This file orchestrates a complete data pipeline infrastructure for Battery
+# Energy Storage System (BESS) analytics, combining:
+#   - Apache Airflow 3 (orchestration & ETL)
+#   - PostgreSQL (metadata storage)
+#   - Streamlit (analytical dashboard)
+#
+# Architecture:
+#   1. Airflow processes market and weather data via scheduled DAGs
+#   2. PostgreSQL stores Airflow metadata and operational state
+#   3. Streamlit dashboard visualizes analytics and system metrics
+#
+# Usage:
+#   docker compose up --build -d    # Start all services
+#   docker compose down -v          # Stop and remove volumes
+# ============================================================================
+
+# --- SHARED AIRFLOW CONFIGURATION ---
+# This anchor defines common settings inherited by all Airflow services
+# to ensure consistent environment and volume mounts across components.
 x-airflow-common: &airflow-common
   build:
     context: .
     dockerfile: docker/Dockerfile.airflow
   environment:
-    &airflow-common-env
-    ENTSOE_API_KEY: ${ENTSOE_API_KEY}
-    AIRFLOW__CORE__EXECUTOR: ${AIRFLOW__CORE__EXECUTOR}
-    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: ${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
-    AIRFLOW__CORE__LOAD_EXAMPLES: ${AIRFLOW__CORE__LOAD_EXAMPLES}
-    AIRFLOW__LOGGING__LOGGING_LEVEL: ${AIRFLOW__LOGGING__LOGGING_LEVEL}
+    &airflow-common-env  # Shared environment variables for all Airflow services
+    # External API credentials
+    ENTSOE_API_KEY: ${ENTSOE_API_KEY}  # ENTSO-E Transparency Platform API key for market data
     
-    # Przekazujemy poprawną zmienną strukturalną Airflow 3 z pliku .env
+    # Airflow Core Configuration
+    AIRFLOW__CORE__EXECUTOR: ${AIRFLOW__CORE__EXECUTOR}  # Execution engine (e.g., LocalExecutor)
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: ${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}  # PostgreSQL connection string
+    AIRFLOW__CORE__LOAD_EXAMPLES: ${AIRFLOW__CORE__LOAD_EXAMPLES}  # Whether to load example DAGs (false for production)
+    AIRFLOW__LOGGING__LOGGING_LEVEL: ${AIRFLOW__LOGGING__LOGGING_LEVEL}  # Log verbosity level
+    
+    # Airflow 3 specific: Task SDK execution endpoint
     AIRFLOW__CORE__EXECUTION_API_SERVER_URL: ${AIRFLOW__CORE__EXECUTION_API_SERVER_URL}
     
+    # Authentication & Security
     AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_ALL_ADMINS: ${AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_ALL_ADMINS}
-    PYTHONPATH: ${PYTHONPATH}
-    AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW__API_AUTH__JWT_SECRET}
-    AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: ${AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS}
-    AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_PASSWORD_SECRET: /opt/airflow/config/auth.json
+    AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW__API_AUTH__JWT_SECRET}  # JWT token secret for API authentication
+    AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: ${AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS}  # User list for simple auth
+    AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_PASSWORD_SECRET: /opt/airflow/config/auth.json  # Path to password config
+    
+    # Python environment
+    PYTHONPATH: ${PYTHONPATH}  # Ensure src/ modules are importable
 
   volumes:
-    - ./dags:/opt/airflow/dags
-    - ./src:/opt/airflow/plugins/src        
-    - ./src:/opt/airflow/src                
-    - ./logs:/opt/airflow/logs
-    - ./data:/opt/airflow/data     
-    - ./config/auth.json:/opt/airflow/config/auth.json:ro         
-  user: "${AIRFLOW_UID:-50000}:0"
+    # Mount local directories into container for live development and persistence
+    - ./dags:/opt/airflow/dags                                    # DAG definitions
+    - ./src:/opt/airflow/plugins/src                              # Custom plugins (for task execution)
+    - ./src:/opt/airflow/src                                      # Source modules (for imports)
+    - ./logs:/opt/airflow/logs                                    # Airflow logs persistence
+    - ./data:/opt/airflow/data                                    # Generated datasets (CSV, Parquet)
+    - ./config/auth.json:/opt/airflow/config/auth.json:ro         # Read-only auth config
+  
+  user: "${AIRFLOW_UID:-50000}:0"  # Run as non-root user for security (defaults to 50000)
   depends_on:
     postgres:
-      condition: service_healthy
+      condition: service_healthy  # Wait for PostgreSQL to be ready before starting Airflow services
 
 services:
-  # --- METADATA STORAGE LAYER ---
+  # ============================================================================
+  # METADATA STORAGE LAYER
+  # ============================================================================
+  # PostgreSQL database stores Airflow's operational metadata including:
+  #   - DAG definitions and serialized DAGs
+  #   - Task instance states and execution history
+  #   - Connection credentials and variable storage
+  #   - User accounts and permissions
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}              # Database username
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}      # Database password
+      POSTGRES_DB: ${POSTGRES_DB}                  # Database name
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data     # Persist database across container restarts
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U airflow"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: always
-
-  # --- AUTOMATED DATABASE INITIALIZATION & MIGRATIONS ---
+      test: ["CMD-SHELL", "pg_isready -U airflow"]  # Check if PostgreSQL is accepting connections
+      interval: 10s                                  # Check every 10 seconds
+      timeout: 5s                                    # Timeout after 5 seconds
+      retries: 5                                     # Retry 5 times before marking unhealthy
+    restart: always  # Auto-restart on failure
+  
+  # ============================================================================
+  # AUTOMATED DATABASE INITIALIZATION & MIGRATIONS
+  # ============================================================================
+  # One-time initialization service that:
+  #   - Creates necessary directories (logs, dag_processor)
+  #   - Sets appropriate file permissions
+  #   - Runs database migrations to initialize Airflow's schema
+  # This service runs as root (user: "0:0") to manage permissions.
   airflow-init:
-    <<: *airflow-common
-    user: "0:0"
+    <<: *airflow-common        # Inherit common Airflow configuration
+    user: "0:0"                # Run as root to manage permissions
     command: >
       bash -c "mkdir -p /opt/airflow/logs/dag_processor && chmod -R 777 /opt/airflow/logs && airflow db migrate"
-
-  # --- AIRFLOW 3 CORE API & UI SERVER ---
+  
+  # ============================================================================
+  # AIRFLOW 3 CORE API & UI SERVER
+  # ============================================================================
+  # Serves the new unified Airflow 3 API and web UI on port 8080.
+  # In Airflow 3, the webserver and API server are combined into a single
+  # service called "api-server" which provides:
+  #   - Web UI for monitoring and managing DAGs
+  #   - REST API for programmatic access
+  #   - Task SDK execution endpoint (uvicorn server)
   airflow-webserver:
-    <<: *airflow-common
-    # POPRAWKA: Dodajemy flagę --port, aby uvicorn zbindował endpoint dla Task SDK na porcie 9091
-    command: api-server --host 0.0.0.0 
+    <<: *airflow-common        # Inherit common Airflow configuration
+    command: api-server --host 0.0.0.0  # Airflow 3 unified API/UI server, bind to all interfaces
     ports:
-      - "8080:8080"
+      - "8080:8080"            # Expose web UI at http://localhost:8080
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8080/ui/"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    restart: always
-
-  # --- AIRFLOW 3 DAG PROCESSOR ---
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/ui/"]  # Check UI availability
+      interval: 30s                                                   # Check every 30 seconds
+      timeout: 10s                                                    # Timeout after 10 seconds
+      retries: 5                                                      # Retry 5 times
+    restart: always  # Auto-restart on failure
+  
+  # ============================================================================
+  # AIRFLOW 3 DAG PROCESSOR
+  # ============================================================================
+  # Separate service for parsing and serializing DAG files.
+  # Introduced in Airflow 3 to isolate DAG parsing from scheduling.
+  # Responsibilities:
+  #   - Parses Python DAG files from the dags/ directory
+  #   - Serializes DAG structures to the database
+  #   - Detects DAG file changes and updates serialization
   airflow-dag-processor:
-    <<: *airflow-common
-    command: dag-processor
-    restart: always
-
-  # --- SCHEDULER & PIPELINE EXECUTION ENGINE ---
+    <<: *airflow-common        # Inherit common Airflow configuration
+    command: dag-processor     # Airflow 3 DAG parsing and serialization service
+    restart: always            # Auto-restart on failure
+  
+  # ============================================================================
+  # SCHEDULER & PIPELINE EXECUTION ENGINE
+  # ============================================================================
+  # Core orchestration engine that:
+  #   - Monitors DAGs for scheduled task runs
+  #   - Submits tasks to the executor (LocalExecutor)
+  #   - Manages task dependencies and execution order
+  #   - Handles retries and failure scenarios
   airflow-scheduler:
-    <<: *airflow-common
-    command: scheduler
-    restart: always
-
-  # --- STREAMLIT ANALYTICAL SCADA DASHBOARD ---
+    <<: *airflow-common        # Inherit common Airflow configuration
+    command: scheduler         # Run the scheduler service
+    restart: always            # Auto-restart on failure
+  
+  # ============================================================================
+  # STREAMLIT ANALYTICAL SCADA DASHBOARD
+  # ============================================================================
+  # Real-time visualization and monitoring dashboard for BESS operations.
+  # Features:
+  #   - Battery system metrics (SOC, power, voltage, temperature)
+  #   - Market price analytics and arbitrage opportunities
+  #   - Weather forecasts and solar generation estimates
+  #   - Physics-based battery degradation modeling
   bess-dashboard:
     build:
-      context: .
-      dockerfile: docker/Dockerfile.streamlit
+      context: .                          # Build context is project root
+      dockerfile: docker/Dockerfile.streamlit  # Streamlit-specific Dockerfile
     ports:
-      - "8501:8501"
+      - "8501:8501"                       # Expose dashboard at http://localhost:8501
     volumes:
-      - ./src:/app/src
-      - ./data:/app/data
-    command: streamlit run src/streamlit/app.py
-    restart: always
+      - ./src:/app/src                    # Mount source code for live development
+      - ./data:/app/data                  # Access generated data files
+    command: streamlit run src/streamlit/app.py  # Start Streamlit server
+    restart: always                       # Auto-restart on failure
 
+# ============================================================================
+# PERSISTENT VOLUMES
+# ============================================================================
 volumes:
-  postgres_data:
+  postgres_data:  # Named volume for PostgreSQL data persistence across restarts

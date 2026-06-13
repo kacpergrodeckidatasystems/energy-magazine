@@ -33,6 +33,13 @@ dev = [
 [tool.ruff]
 target-version = "py313"
 line-length = 120
+exclude = [
+    "tests",      # Exclude test directory from linting
+    "logs",       # Exclude log files
+    "data",       # Exclude data directory
+    ".venv",      # Exclude virtual environment
+    "__pycache__" # Exclude Python cache
+]
 
 [tool.ruff.lint]
 # Core rule groups (E/W: Flake8, F: Pyflakes, I: Isort, B: Bugbear, C90: Mccabe complexity)
