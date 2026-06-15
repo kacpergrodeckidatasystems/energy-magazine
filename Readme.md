@@ -76,7 +76,7 @@ physics/
 Prerequisites:
 Ensure your development environment has the following dependencies installed:
 
-Python 3.12 or higher
+Python 3.11 or higher
 
 Docker and Docker Compose
 
