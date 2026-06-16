@@ -9,13 +9,13 @@ from src.streamlit.components.base_chart import BESSBaseChart
 class InverterCorrelationChart(BESSBaseChart):
     """Dual-axis line chart correlating PCS active power profiles against solar irradiance trends"""
 
-    def render(self, df_env: pd.DataFrame, df_inv: pd.DataFrame) -> None:
+    def render(self, environment_df: pd.DataFrame, inverter_df: pd.DataFrame) -> None:
         fig = go.Figure()
 
         fig.add_trace(
             go.Scatter(
-                x=df_inv["timestamp"],
-                y=df_inv["active_power_output_MW"],
+                x=inverter_df["timestamp"],
+                y=inverter_df["active_power_output_MW"],
                 name="Active Power (MW)",
                 mode="lines",
                 line=dict(color="#00CC96", width=2),
@@ -24,8 +24,8 @@ class InverterCorrelationChart(BESSBaseChart):
 
         fig.add_trace(
             go.Scatter(
-                x=df_env["timestamp"],
-                y=df_env["max_solar_radiation_W_m2"],
+                x=environment_df["timestamp"],
+                y=environment_df["max_solar_radiation_W_m2"],
                 name="Irradiance (W/m²)",
                 mode="lines",
                 line=dict(color="#FFA15A", dash="dot"),
@@ -47,8 +47,8 @@ class InverterCorrelationChart(BESSBaseChart):
 class HvacSensorsChart(BESSBaseChart):
     """Line chart tracking internal container ambient temperature sensors and anomalies"""
 
-    def render(self, df_env: pd.DataFrame) -> None:
-        df_melted = df_env.melt(
+    def render(self, environment_df: pd.DataFrame) -> None:
+        df_melted = environment_df.melt(
             id_vars=["timestamp"],
             value_vars=[
                 "ambient_temp_sensor_01_C",

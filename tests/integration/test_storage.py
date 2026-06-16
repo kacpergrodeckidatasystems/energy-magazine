@@ -2,10 +2,10 @@ import os
 
 import pandas as pd
 
-from src.airflow.raw_to_etl import LocalParquetStorage
+from src.airflow.bess_etl_pipeline import LocalParquetStorage
 
 
-def test_storage_integration_with_(tmp_path):
+def test_storage_integration_with_local_parquet(tmp_path):
     storage = LocalParquetStorage(base_dir=str(tmp_path))
 
     test_df = pd.DataFrame({"voltage": [1.0, 2.0], "current": [0.5, 0.6]})

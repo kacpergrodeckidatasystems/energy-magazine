@@ -21,7 +21,7 @@ def init_airflow_db():
     """Initializes a clean, isolated file-based SQLite database for tests."""
     db.initdb()
     yield
-    # Sprzątanie po zakończeniu sesji testowej
+    # Cleanup after test session ends
     if os.path.exists(db_path):
         try:
             os.remove(db_path)

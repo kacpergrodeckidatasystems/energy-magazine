@@ -5,16 +5,18 @@ import streamlit as st
 from src.streamlit.components.base_chart import BESSBaseChart
 
 
-class EnergyStateOfEnergyChart(BESSBaseChart):
+class StateOfEnergyChart(BESSBaseChart):
     """Area chart displaying integrated historical cumulative state of energy (SoE)"""
 
-    def render(self, df_inv: pd.DataFrame, dt_hours: float) -> None:
-        discharged = df_inv["active_power_output_MW"].apply(lambda x: x * dt_hours if x > 0 else 0)
-        charged = df_inv["active_power_output_MW"].apply(lambda x: abs(x) * dt_hours if x < 0 else 0)
-        df_inv["bess_soe_MWh"] = (charged - discharged).cumsum()
+    def render(self, inverter_df: pd.DataFrame, sampling_interval_hours: float) -> None:
+        discharged = inverter_df["active_power_output_MW"].apply(lambda x: x * sampling_interval_hours if x > 0 else 0)
+        charged = inverter_df["active_power_output_MW"].apply(
+            lambda x: abs(x) * sampling_interval_hours if x < 0 else 0
+        )
+        inverter_df["bess_soe_MWh"] = (charged - discharged).cumsum()
 
         fig = px.area(
-            df_inv,
+            inverter_df,
             x="timestamp",
             y="bess_soe_MWh",
             title="BESS Energy Capacity Profile (SoE)",
@@ -25,12 +27,12 @@ class EnergyStateOfEnergyChart(BESSBaseChart):
         st.plotly_chart(fig, width="stretch")
 
 
-class ThermalDeltaTChart(BESSBaseChart):
+class TemperatureDeltaChart(BESSBaseChart):
     """Line chart tracking multi-rack cell temperature dispersion limits"""
 
-    def render(self, df_delta_t: pd.DataFrame) -> None:
+    def render(self, temperature_delta_df: pd.DataFrame) -> None:
         fig = px.line(
-            df_delta_t,
+            temperature_delta_df,
             x="timestamp",
             y="delta_t_C",
             color="rack_id",
@@ -56,9 +58,9 @@ class ThermalDeltaTChart(BESSBaseChart):
 class InternalResistanceScatterChart(BESSBaseChart):
     """Faceted cross-correlation matrix mapping U vs I slope characteristics"""
 
-    def render(self, df_res: pd.DataFrame) -> None:
+    def render(self, resistance_data_df: pd.DataFrame) -> None:
         fig = px.scatter(
-            df_res,
+            resistance_data_df,
             x="rack_total_current_A",
             y="module_voltage_V",
             color="battery_module_id",

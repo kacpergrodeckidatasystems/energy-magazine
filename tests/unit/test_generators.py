@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from src.generators.raw_generators import generate_battery_day, generate_environment_day
+from src.generators.bess_telemetry_generators import generate_battery_day, generate_environment_day
 
 
 def test_environment_generator_output_schema():

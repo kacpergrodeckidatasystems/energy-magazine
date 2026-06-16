@@ -11,14 +11,14 @@ import pandas as pd
 
 import streamlit as st
 from src.streamlit.components.analytics_charts import (
-    EnergyStateOfEnergyChart,
+    StateOfEnergyChart,
     InternalResistanceScatterChart,
-    ThermalDeltaTChart,
+    TemperatureDeltaChart,
 )
 
 
 def render_physics_tab(
-    df_inv: pd.DataFrame, df_delta_t: pd.DataFrame, df_res_data: pd.DataFrame, dt_hours: float
+    df_inv: pd.DataFrame, df_delta_t: pd.DataFrame, df_resistance_data: pd.DataFrame, dt_hours: float
 ) -> None:
     """
     Renders Advanced Physical Analytics tab layout.
@@ -26,15 +26,15 @@ def render_physics_tab(
     Args:
         df_inv: Inverter telemetry dataframe
         df_delta_t: Thermal delta-T analysis dataframe
-        df_res_data: Internal resistance estimation dataframe
+        df_resistance_data: Internal resistance estimation dataframe
         dt_hours: Sampling interval in hours for energy integration
     """
     st.subheader("🔬 Performance Degradation & Thermal Diagnostics")
-    EnergyStateOfEnergyChart().render(df_inv, dt_hours)
+    StateOfEnergyChart().render(df_inv, dt_hours)
 
     st.markdown("---")
     col_an1, col_an2 = st.columns(2)
     with col_an1:
-        ThermalDeltaTChart().render(df_delta_t)
+        TemperatureDeltaChart().render(df_delta_t)
     with col_an2:
-        InternalResistanceScatterChart().render(df_res_data)
+        InternalResistanceScatterChart().render(df_resistance_data)

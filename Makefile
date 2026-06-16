@@ -99,7 +99,7 @@ containers: ## Spin up Docker infrastructure (Airflow + Streamlit) and trigger D
 	@echo "⏳ Waiting for Airflow Webserver to be ready..."
 	@until curl -s -I http://localhost:8080/ | grep -q "HTTP/"; do sleep 3; done	
 	@echo "🔍 Checking for DAG registration..."
-	@for dag in bess_pure_triggers_dag bess_market_weather_sync; do \
+	@for dag in bess_telemetry_ingestion bess_market_weather_sync; do \
 		echo "Waiting for $$dag to be registered..."; \
 		until docker compose exec -T airflow-scheduler airflow dags list | grep -q "$$dag"; do \
 			sleep 5; \
@@ -111,6 +111,7 @@ containers: ## Spin up Docker infrastructure (Airflow + Streamlit) and trigger D
 	done
 	
 	@echo "✨ Pipeline fully triggered. Dashboard available at http://localhost:8501"
+	@echo "✨ Airflow fully triggered, available at http://localhost:8080"
 
 dag-update: ## Force Airflow 3 to re-serialize DAGs (use after modifying DAG files)
 	docker compose exec -T airflow-scheduler airflow dags reserialize
@@ -155,7 +156,7 @@ clean: ## Clean workspace (remove Docker containers, volumes, and virtual enviro
 
 setup: pre-flight | $(VENV_NAME)  ## Run pre-flight, set up Python 3.12 venv, dirs and start infrastructure
 	@$(PIP) install --upgrade pip
-	@$(PIP) install -e .[dev]
+	@$(PIP) install -e .[dev,test]
 	@touch $(VENV_NAME)/bin/activate
 	@if [ ! -d ".airflow" ]; then \
 		echo "📁 Katalog '.airflow' nie istnieje. Tworzę..."; \
@@ -175,7 +176,6 @@ setup: pre-flight | $(VENV_NAME)  ## Run pre-flight, set up Python 3.12 venv, di
 	fi
 	@echo "🛡️  Ustawianie poprawnych uprawnień deweloperskich..."
 	@$(MAKE) fix-permissions
-	@echo "🚀 Automatyczne uruchamianie infrastruktury..."
 
 fix-permissions: ## Fix ownership and permissions for runtime directories (.airflow, data, logs)
 	@echo "⚙️  Fixing permissions for folder 'data'..."

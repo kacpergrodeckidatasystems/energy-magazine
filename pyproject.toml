@@ -21,10 +21,13 @@ dependencies = [
 dev = [
     "ruff>=0.3.0",
     "mypy>=1.9.0",
-    "pandas-stubs", 
-    "pytest>=8.0.0",
+    "pandas-stubs",
     "requests>=2.31.0",
     "entsoe-py"
+]
+test = [
+    "pytest>=8.0.0",
+    "apache-airflow>=2.8.0"
 ]
 
 [tool.ruff]
