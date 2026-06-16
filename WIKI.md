@@ -1107,9 +1107,9 @@ docker compose exec postgres pg_dump -U airflow airflow > airflow-backup.sql
 **Not recommended** unless you have specific requirements.
 
 **Q: What Python version is required?**
-**A**: Python 3.11+ (3.12 recommended). Set in [`pyproject.toml`](pyproject.toml):
+**A**: Python 3.12 (required). Set in [`pyproject.toml`](pyproject.toml):
 ```toml
-requires-python = ">=3.11"
+requires-python = ">=3.12,<3.13"
 ```
 
 ### Troubleshooting Questions

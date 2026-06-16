@@ -4,7 +4,7 @@
 
 **Enterprise-grade Battery Energy Storage System (BESS) analytics platform for real-time monitoring, physics-based analysis, and operational visualization**
 
-[![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/)
 [![Apache Airflow](https://img.shields.io/badge/Airflow-3.x-017CEE.svg)](https://airflow.apache.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.30%2B-FF4B4B.svg)](https://streamlit.io/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
@@ -144,7 +144,7 @@ physics/
 
 ### Prerequisites
 
-- **Python 3.11+** (3.12 recommended)
+- **Python 3.12** (required)
 - **Docker Engine** with Compose plugin
 - **Make** utility (standard on Linux/macOS, available via WSL2 for Windows)
 
